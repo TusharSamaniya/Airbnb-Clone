@@ -8,6 +8,6 @@ import com.tushar.entity.Users;
 
 public interface UserRepository extends JpaRepository<Users, Long> {
 	
-	Optional<Users> findbyEmial(String email);
+	Optional<Users> findByEmail(String email);
 
 }
