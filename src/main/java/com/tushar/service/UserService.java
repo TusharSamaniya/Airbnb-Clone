@@ -1,5 +1,7 @@
 package com.tushar.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,5 +26,15 @@ public class UserService {
 		return repo.save(user);
 	}
 	
-
+	public Users loginUser(String email, String password) {
+		Optional<Users> userOptional = repo.findByEmail(email);
+		if(userOptional.isPresent()) {
+			Users user = userOptional.get();
+			if(passwordEncoder.matches(password, user.getPassword())) {
+				user.setPassword(null);
+				return user;
+			}
+	}
+		throw new RuntimeException("Invalid email or password");
+}
 }
