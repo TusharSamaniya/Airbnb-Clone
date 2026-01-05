@@ -1,5 +1,7 @@
 package com.tushar.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,6 +34,8 @@ public class Property {
 	private Double pricePerNight;
 	private Integer bedrooms;
 	private Integer bathrooms;
+	
+	@JsonProperty("maxGuests")
 	private Integer maxGuest;
 	private String amenities;
 	
