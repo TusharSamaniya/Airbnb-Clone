@@ -1,5 +1,10 @@
 package com.tushar.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +14,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.tushar.entity.Property;
 import com.tushar.entity.Users;
@@ -53,6 +60,33 @@ public class PropertyController {
 	public ResponseEntity<Property> getPropertyById(@PathVariable Long id){
 		Property property = propertyService.getPropertyById(id);
 		return ResponseEntity.ok(property);
+	}
+	
+	@PostMapping("/upload-image")
+	public ResponseEntity<?> uploadImage(@RequestParam("image") MultipartFile file, HttpSession session) {
+	    Users currentUser = (Users) session.getAttribute("loggedInUser");
+	    if (currentUser == null || !"HOST".equals(currentUser.getRole())) {
+	        return ResponseEntity.status(401).body("Unauthorized");
+	    }
+
+	    if (file.isEmpty()) {
+	        return ResponseEntity.badRequest().body("Please select an image");
+	    }
+
+	    try {
+	        // Save file to uploads folder
+	        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+	        Path path = Paths.get("uploads/" + fileName);
+	        Files.createDirectories(path.getParent());
+	        Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+	        // Return the URL for frontend
+	        String imageUrl = "/uploads/" + fileName;
+	        return ResponseEntity.ok(imageUrl);
+
+	    } catch (IOException e) {
+	        return ResponseEntity.status(500).body("Upload failed");
+	    }
 	}
 	
 	

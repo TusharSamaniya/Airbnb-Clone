@@ -40,5 +40,7 @@ public class PropertyService {
 	    return propertyRepo.findById(id)
 	            .orElseThrow(() -> new RuntimeException("Property not found with ID: " + id));
 	}
+	
+	
 
 }

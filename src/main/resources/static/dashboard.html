@@ -22,7 +22,7 @@
             <p><strong>Role:</strong> <span id="userRole"></span></p>
         </div>
 
-        <!-- Show "Add Property" button and form only for HOST -->
+        <!-- Host Section: Add Property Form -->
         <div id="hostSection" style="display: none;">
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white">
@@ -72,6 +72,13 @@
                             </div>
                         </div>
 
+                        <!-- Image Upload Field -->
+                        <div class="mb-3">
+                            <label class="form-label">Property Image</label>
+                            <input type="file" class="form-control" id="image" accept="image/*">
+                            <small class="text-muted">Upload a beautiful photo of your property (optional but recommended)</small>
+                        </div>
+
                         <button type="submit" class="btn btn-primary btn-lg w-100">Add Property</button>
                     </form>
 
@@ -80,7 +87,7 @@
             </div>
         </div>
 
-        <!-- Message for Guests -->
+        <!-- Guest Message -->
         <div id="guestMessage" class="text-center mt-5" style="display: none;">
             <h4>Welcome, Guest! You can browse and book properties soon.</h4>
         </div>
@@ -88,10 +95,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Get current logged-in user from localStorage
+        // Get logged-in user
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-        // If not logged in → go to login
         if (!currentUser) {
             alert('Please login first!');
             window.location.href = '/login.html';
@@ -101,17 +107,48 @@
         document.getElementById('welcomeMessage').textContent = 'Hello, ' + currentUser.fullName + '!';
         document.getElementById('userRole').textContent = currentUser.role;
 
-        // Show correct section based on role
+        // Show correct section
         if (currentUser.role === 'HOST') {
             document.getElementById('hostSection').style.display = 'block';
         } else {
             document.getElementById('guestMessage').style.display = 'block';
         }
 
-        // Handle Add Property Form
+        // Handle form submission with image upload
         document.getElementById('addPropertyForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            let imageUrl = '';  // Will hold uploaded image path
+
+            // Step 1: Upload image if selected
+            const imageFile = document.getElementById('image').files[0];
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('image', imageFile);
+
+                try {
+                    const uploadResponse = await fetch('/api/properties/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'  // Sends session cookie
+                    });
+
+                    if (!uploadResponse.ok) {
+                        const errorText = await uploadResponse.text();
+                        throw new Error(errorText || 'Image upload failed');
+                    }
+
+                    imageUrl = await uploadResponse.text();  // e.g., "/uploads/123456789_photo.jpg"
+                    console.log('Image uploaded:', imageUrl);
+
+                } catch (err) {
+                    document.getElementById('propertyMessage').innerHTML = 
+                        `<div class="alert alert-danger">Image upload failed: ${err.message}</div>`;
+                    return;  // Stop if image fails
+                }
+            }
+
+            // Step 2: Create property object (include imageUrl if uploaded)
             const property = {
                 title: document.getElementById('title').value,
                 description: document.getElementById('description').value,
@@ -120,30 +157,35 @@
                 bedrooms: parseInt(document.getElementById('bedrooms').value),
                 bathrooms: parseInt(document.getElementById('bathrooms').value),
                 maxGuests: parseInt(document.getElementById('maxGuests').value),
-                amenities: document.getElementById('amenities').value
+                amenities: document.getElementById('amenities').value,
+                imageUrl: imageUrl  // ← This sends the image path to backend
             };
 
+            // Step 3: Send property to backend
             try {
-            	const response = await fetch('/api/properties/add', {
-            	    method: 'POST',
-            	    headers: { 'Content-Type': 'application/json' },
-            	    credentials: 'include',
-            	    body: JSON.stringify(property) // ✅ THIS WAS MISSING
-            	});
+                const response = await fetch('/api/properties/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(property)
+                });
 
                 if (response.ok) {
                     const savedProperty = await response.json();
                     document.getElementById('propertyMessage').innerHTML = 
-                        '<div class="alert alert-success">Property added successfully! ID: ' + savedProperty.id + '</div>';
+                        `<div class="alert alert-success">
+                            Property added successfully! ID: ${savedProperty.id}
+                            ${imageUrl ? '<br>Image uploaded!' : ''}
+                        </div>`;
                     document.getElementById('addPropertyForm').reset();
                 } else {
                     const error = await response.text();
                     document.getElementById('propertyMessage').innerHTML = 
-                        '<div class="alert alert-danger">Error: ' + error + '</div>';
+                        `<div class="alert alert-danger">Error: ${error}</div>`;
                 }
             } catch (err) {
                 document.getElementById('propertyMessage').innerHTML = 
-                    '<div class="alert alert-danger">Network error. Try again.</div>';
+                    `<div class="alert alert-danger">Network error: ${err.message}</div>`;
             }
         });
 

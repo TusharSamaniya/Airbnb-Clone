@@ -42,5 +42,7 @@ public class Property {
 	@ManyToOne
 	@JoinColumn(name = "host_id", nullable = false)
 	private Users host;
+	
+	private String imageUrl;
 
 }
