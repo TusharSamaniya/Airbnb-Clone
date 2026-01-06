@@ -89,6 +89,11 @@ public class PropertyController {
 	    }
 	}
 	
+	public ResponseEntity<List<Property>> searchProperties(@RequestParam(required = false) String location, @RequestParam(required = false) Integer guests){
+		List<Property> result = propertyService.searchProperty(location, guests);
+		return ResponseEntity.ok(result);
+	}
+	
 	
 	}
 
