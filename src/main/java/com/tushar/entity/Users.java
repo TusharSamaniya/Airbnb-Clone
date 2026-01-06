@@ -3,6 +3,7 @@ package com.tushar.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
@@ -14,10 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.ToString;
 
+@Data
 @Entity
 @Table(name = "users")
-@Data
+@ToString(exclude = "properties")
 public class Users {
 	
 	@Id
@@ -41,6 +44,7 @@ public class Users {
 	private String role = "GUEST";
 	
 	@OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonIgnore
 	private List<Property> properties = new ArrayList<>();
 
 }

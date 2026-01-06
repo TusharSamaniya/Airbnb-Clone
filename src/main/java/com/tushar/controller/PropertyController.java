@@ -1,7 +1,11 @@
 package com.tushar.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +42,20 @@ public class PropertyController {
 	        }
 			
 		}
+	
+	@GetMapping("/all")
+	public ResponseEntity<List<Property>> getAllProperties(){
+		List<Property> properties = propertyService.getAllProperties();
+		return ResponseEntity.ok(properties);
+	}
+	
+	@GetMapping("/{id}")
+	public ResponseEntity<Property> getPropertyById(@PathVariable Long id){
+		Property property = propertyService.getPropertyById(id);
+		return ResponseEntity.ok(property);
+	}
+	
+	
 	}
 
 

@@ -1,5 +1,7 @@
 package com.tushar.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,16 @@ public class PropertyService {
 		
 		property.setHost(host);
 		return propertyRepo.save(property);
+	}
+	
+	public List<Property> getAllProperties(){
+		return propertyRepo.findAll();
+	}
+	
+	// Get one property by its ID
+	public Property getPropertyById(Long id) {
+	    return propertyRepo.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Property not found with ID: " + id));
 	}
 
 }
