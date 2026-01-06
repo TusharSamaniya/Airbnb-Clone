@@ -18,8 +18,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tushar.dto.BookingRequest;
+import com.tushar.entity.Booking;
 import com.tushar.entity.Property;
 import com.tushar.entity.Users;
+import com.tushar.repository.PropertyRepository;
+import com.tushar.service.BookingService;
 import com.tushar.service.PropertyService;
 
 import jakarta.servlet.http.HttpSession;
@@ -30,6 +34,12 @@ public class PropertyController {
 	
 	@Autowired
 	private PropertyService propertyService;
+	
+	@Autowired
+	private BookingService bookingService;
+	
+	@Autowired
+	private PropertyRepository propertyRepository;
 	
 	@PostMapping("/add")
 	public ResponseEntity<?> addProperty(@RequestBody Property property, HttpSession session){
@@ -92,6 +102,30 @@ public class PropertyController {
 	public ResponseEntity<List<Property>> searchProperties(@RequestParam(required = false) String location, @RequestParam(required = false) Integer guests){
 		List<Property> result = propertyService.searchProperty(location, guests);
 		return ResponseEntity.ok(result);
+	}
+	
+	@PostMapping("/book")
+	public ResponseEntity<?> bookProperty(@RequestBody BookingRequest request, HttpSession session) {
+	    Users currentUser = (Users) session.getAttribute("loggedInUser");
+	    if (currentUser == null) {
+	        return ResponseEntity.status(401).body("Please login to book");
+	    }
+
+	    Property property = propertyRepository.findById(request.getPropertyId())
+	            .orElseThrow(() -> new RuntimeException("Property not found"));
+
+	    try {
+	        Booking booking = bookingService.createBooking(
+	                property,
+	                currentUser,
+	                request.getCheckIn(),
+	                request.getCheckOut(),
+	                request.getGuests()
+	        );
+	        return ResponseEntity.ok(booking);
+	    } catch (RuntimeException e) {
+	        return ResponseEntity.badRequest().body(e.getMessage());
+	    }
 	}
 	
 	
