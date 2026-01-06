@@ -47,7 +47,7 @@
     <div class="container my-5">
         <!-- Main Property Image -->
         <div id="mainImageContainer">
-            <!-- Will be filled by JavaScript -->
+            <!-- Filled by JavaScript -->
         </div>
 
         <div class="row">
@@ -98,12 +98,33 @@
             <!-- Booking Sidebar -->
             <div class="col-lg-4">
                 <div class="card shadow sticky-top" style="top: 100px;">
-                    <div class="card-body text-center">
-                        <h4>₹<span id="priceSidebar"></span> / night</h4>
-                        <button class="btn btn-danger btn-lg w-100 mt-4" disabled>
-                            Booking System Coming Soon!
-                        </button>
-                        <p class="text-muted mt-3">Full booking feature in next steps</p>
+                    <div class="card-body">
+                        <h4 class="text-center mb-4">
+                            ₹<span id="priceSidebar"></span> <small class="text-muted">/ night</small>
+                        </h4>
+
+                        <form id="bookingForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Check-in Date</label>
+                                <input type="date" class="form-control" id="checkIn" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Check-out Date</label>
+                                <input type="date" class="form-control" id="checkOut" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Number of Guests</label>
+                                <input type="number" class="form-control" id="bookingGuests" min="1" placeholder="1" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger btn-lg w-100 mb-3">
+                                Book Now
+                            </button>
+
+                            <div id="bookingMessage" class="text-center"></div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -115,6 +136,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const propertyId = urlParams.get('id');
 
+        let property = null;  // Will hold the loaded property
+
         if (!propertyId) {
             alert('No property selected!');
             window.location.href = '/';
@@ -125,7 +148,7 @@
                 const response = await fetch(`/api/properties/${propertyId}`);
                 if (!response.ok) throw new Error('Property not found');
 
-                const property = await response.json();
+                property = await response.json();
 
                 // Set main image
                 const imageContainer = document.getElementById('mainImageContainer');
@@ -138,7 +161,7 @@
                         </div>`;
                 }
 
-                // Fill details
+                // Fill all details
                 document.getElementById('title').textContent = property.title;
                 document.getElementById('location').textContent = property.location;
                 document.getElementById('description').textContent = property.description || 'No description available.';
@@ -156,6 +179,71 @@
             }
         }
 
+        // Booking form submission
+        document.getElementById('bookingForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const checkIn = document.getElementById('checkIn').value;
+            const checkOut = document.getElementById('checkOut').value;
+            const guests = parseInt(document.getElementById('bookingGuests').value);
+
+            // Validation
+            if (!checkIn || !checkOut || isNaN(guests)) {
+                showBookingMessage('Please fill in all fields correctly.', 'danger');
+                return;
+            }
+
+            if (new Date(checkOut) <= new Date(checkIn)) {
+                showBookingMessage('Check-out date must be after check-in date.', 'danger');
+                return;
+            }
+
+            if (guests > property.maxGuests) {
+                showBookingMessage(`This property only accommodates up to ${property.maxGuests} guests.`, 'danger');
+                return;
+            }
+
+            // Calculate total nights and price
+            const nights = daysBetween(checkIn, checkOut);
+            const totalPrice = nights * property.pricePerNight;
+
+            // Success message
+            showBookingMessage(`
+                <div class="alert alert-success p-3">
+                    <strong>🎉 Booking Request Successful!</strong><br><br>
+                    <strong>Dates:</strong> ${formatDate(checkIn)} → ${formatDate(checkOut)}<br>
+                    <strong>Nights:</strong> ${nights}<br>
+                    <strong>Guests:</strong> ${guests}<br>
+                    <strong>Total Amount:</strong> ₹${totalPrice.toLocaleString('en-IN')}
+                    <hr>
+                    <small class="text-muted">You will receive a confirmation soon. (Real booking system coming in next step!)</small>
+                </div>
+            `, 'success');
+
+            // Reset form
+            document.getElementById('bookingForm').reset();
+        });
+
+        // Helper functions
+        function daysBetween(start, end) {
+            const oneDay = 24 * 60 * 60 * 1000;
+            return Math.round(Math.abs((new Date(end) - new Date(start)) / oneDay));
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function showBookingMessage(html, type) {
+            const msgDiv = document.getElementById('bookingMessage');
+            msgDiv.innerHTML = html;
+            if (type === 'success') {
+                setTimeout(() => msgDiv.innerHTML = '', 10000);
+            }
+        }
+
+        // Load property on page open
         loadProperty();
     </script>
 </body>
