@@ -77,35 +77,36 @@
                 document.getElementById('footer-container').innerHTML = data;
             });
 
-        // Contact form submission (simple alert for now)
-        document.getElementById('contactForm').addEventListener('submit', (e) => {
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const subject = document.getElementById('subject').value;
-            const message = document.getElementById('message').value;
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value
+            };
 
-            // In real app: send to backend → email via Spring Mail
-            // For now: show success + copy to clipboard suggestion
-            const mailtoLink = `mailto:your.email@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-                `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
-            )}`;
+            try {
+                const response = await fetch('/api/contact/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
 
-            document.getElementById('contactMessage').innerHTML = `
-                <div class="alert alert-success">
-                    <strong>Thank you, ${name}!</strong><br>
-                    Your message has been prepared.<br><br>
-                    <a href="${mailtoLink}" class="btn btn-outline-success">
-                        Open Email Client to Send
-                    </a>
-                    <p class="mt-3 small text-muted">
-                        (Click the button above to open your email app and send the message)
-                    </p>
-                </div>
-            `;
-
-            document.getElementById('contactForm').reset();
+                if (response.ok) {
+                    document.getElementById('contactMessage').innerHTML = 
+                        '<div class="alert alert-success">Thank you! Your message has been sent successfully. I will reply soon! ❤️</div>';
+                    document.getElementById('contactForm').reset();
+                } else {
+                    const error = await response.text();
+                    document.getElementById('contactMessage').innerHTML = 
+                        `<div class="alert alert-danger">Error: ${error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('contactMessage').innerHTML = 
+                    '<div class="alert alert-danger">Network error. Please try again.</div>';
+            }
         });
     </script>
 </body>
