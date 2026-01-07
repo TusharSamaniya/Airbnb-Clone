@@ -179,49 +179,68 @@
             }
         }
 
-        // Booking form submission
-        document.getElementById('bookingForm')?.addEventListener('submit', (e) => {
+        // Real booking submission to backend
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const checkIn = document.getElementById('checkIn').value;
             const checkOut = document.getElementById('checkOut').value;
             const guests = parseInt(document.getElementById('bookingGuests').value);
 
-            // Validation
+            // Client-side validation
             if (!checkIn || !checkOut || isNaN(guests)) {
-                showBookingMessage('Please fill in all fields correctly.', 'danger');
+                showBookingMessage('Please fill all fields.', 'danger');
                 return;
             }
 
             if (new Date(checkOut) <= new Date(checkIn)) {
-                showBookingMessage('Check-out date must be after check-in date.', 'danger');
+                showBookingMessage('Check-out must be after check-in.', 'danger');
                 return;
             }
 
             if (guests > property.maxGuests) {
-                showBookingMessage(`This property only accommodates up to ${property.maxGuests} guests.`, 'danger');
+                showBookingMessage(`Max ${property.maxGuests} guests allowed.`, 'danger');
                 return;
             }
 
-            // Calculate total nights and price
-            const nights = daysBetween(checkIn, checkOut);
-            const totalPrice = nights * property.pricePerNight;
+            const bookingData = {
+                propertyId: property.id,
+                checkIn: checkIn,
+                checkOut: checkOut,
+                guests: guests
+            };
 
-            // Success message
-            showBookingMessage(`
-                <div class="alert alert-success p-3">
-                    <strong>🎉 Booking Request Successful!</strong><br><br>
-                    <strong>Dates:</strong> ${formatDate(checkIn)} → ${formatDate(checkOut)}<br>
-                    <strong>Nights:</strong> ${nights}<br>
-                    <strong>Guests:</strong> ${guests}<br>
-                    <strong>Total Amount:</strong> ₹${totalPrice.toLocaleString('en-IN')}
-                    <hr>
-                    <small class="text-muted">You will receive a confirmation soon. (Real booking system coming in next step!)</small>
-                </div>
-            `, 'success');
+            try {
+                const response = await fetch('/api/properties/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',  // Important: sends session cookie
+                    body: JSON.stringify(bookingData)
+                });
 
-            // Reset form
-            document.getElementById('bookingForm').reset();
+                if (response.ok) {
+                    const booking = await response.json();
+                    const nights = daysBetween(checkIn, checkOut);
+
+                    showBookingMessage(`
+                        <div class="alert alert-success p-4">
+                            <strong>🎉 Booking Confirmed!</strong><br><br>
+                            <strong>Booking ID:</strong> ${booking.id}<br>
+                            <strong>Dates:</strong> ${formatDate(checkIn)} → ${formatDate(checkOut)}<br>
+                            <strong>Nights:</strong> ${nights}<br>
+                            <strong>Guests:</strong> ${guests}<br>
+                            <strong>Total Amount:</strong> ₹${booking.totalPrice.toLocaleString('en-IN')}<br><br>
+                            <em>Thank you for choosing us!</em>
+                        </div>
+                    `);
+                    document.getElementById('bookingForm').reset();
+                } else {
+                    const error = await response.text();
+                    showBookingMessage(error || 'Booking failed. Please try again.', 'danger');
+                }
+            } catch (err) {
+                showBookingMessage('Network error. Please check your connection.', 'danger');
+            }
         });
 
         // Helper functions
@@ -235,15 +254,12 @@
             return date.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         }
 
-        function showBookingMessage(html, type) {
+        function showBookingMessage(html) {
             const msgDiv = document.getElementById('bookingMessage');
             msgDiv.innerHTML = html;
-            if (type === 'success') {
-                setTimeout(() => msgDiv.innerHTML = '', 10000);
-            }
         }
 
-        // Load property on page open
+        // Load property when page opens
         loadProperty();
     </script>
 </body>
